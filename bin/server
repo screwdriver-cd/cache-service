@@ -1,0 +1,41 @@
+#!/usr/bin/env node
+
+'use strict';
+
+const winston = require('winston');
+const config = require('config');
+
+// Setup Caching strategy
+const strategyConfig = config.get('strategy');
+let strategyModule = `catbox-${strategyConfig.plugin}`;
+
+// eslint-disable-next-line import/no-dynamic-require
+const strategy = require(strategyModule);
+const cache = Object.assign({ engine: strategy }, strategyConfig[strategyConfig.plugin]);
+
+const httpd = config.get('httpd');
+const auth = config.get('auth');
+const builds = config.get('builds');
+const commands = config.get('commands');
+const ecosystem = config.get('ecosystem');
+
+async function init() {
+    try {
+        const server = await require('../')({
+            cache,
+            httpd,
+            builds,
+            commands,
+            auth,
+            ecosystem
+        });
+
+        return winston.info('Server running at %s', server.info.uri);
+    } catch (err) {
+        winston.error(err);
+
+        return process.exit(1);
+    }
+}
+
+init();
