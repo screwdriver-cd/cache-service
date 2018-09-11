@@ -3,16 +3,16 @@
 const joi = require('joi');
 const boom = require('boom');
 
-const SCHEMA_BUILD_ID = joi.number().integer().positive().label('Build ID');
-const SCHEMA_ARTIFACT_ID = joi.string().label('Artifact ID');
+const SCHEMA_EVENT_ID = joi.number().integer().positive().label('Event ID');
+const SCHEMA_CACHE_ID = joi.string().label('Cache ID');
 const DEFAULT_TTL = 24 * 60 * 60 * 1000; // 1 day
 const DEFAULT_BYTES = 1024 * 1024 * 1024; // 1GB
 
 exports.plugin = {
-    name: 'builds',
+    name: 'events',
 
     /**
-     * Builds Plugin
+     * Events Plugin
      * @method  register
      * @param  {Hapi}     server                Hapi Server
      * @param  {Object}   options               Configuration
@@ -21,7 +21,7 @@ exports.plugin = {
      */
     register(server, options) {
         const cache = server.cache({
-            segment: 'builds',
+            segment: 'events',
             expiresIn: parseInt(options.expiresInSec, 10) || DEFAULT_TTL
         });
 
@@ -29,11 +29,11 @@ exports.plugin = {
 
         server.route([{
             method: 'GET',
-            path: '/builds/{id}/{artifact*}',
+            path: '/events/{id}/{cache*}',
             handler: async (request, h) => {
-                const buildId = request.params.id;
-                const artifact = request.params.artifact;
-                const id = `${buildId}-${artifact}`;
+                const eventId = request.params.id;
+                const cache = request.params.cache;
+                const id = `${eventId}-${cache}`;
 
                 let value;
 
@@ -60,12 +60,12 @@ exports.plugin = {
                 return response;
             },
             options: {
-                description: 'Read build artifacts',
-                notes: 'Get an artifact from a specific build',
-                tags: ['api', 'builds'],
+                description: 'Read event cache',
+                notes: 'Get a cached object from a specific event',
+                tags: ['api', 'events'],
                 auth: {
                     strategies: ['token'],
-                    scope: ['user', 'pipeline']
+                    scope: ['user', 'event']
                 },
                 plugins: {
                     'hapi-swagger': {
@@ -74,19 +74,19 @@ exports.plugin = {
                 },
                 validate: {
                     params: {
-                        id: SCHEMA_BUILD_ID,
-                        artifact: SCHEMA_ARTIFACT_ID
+                        id: SCHEMA_EVENT_ID,
+                        cache: SCHEMA_CACHE_ID
                     }
                 }
             }
         }, {
             method: 'PUT',
-            path: '/builds/{id}/{artifact*}',
+            path: '/events/{id}/{cache*}',
             handler: async (request, h) => {
                 const { username } = request.auth.credentials;
-                const buildId = request.params.id;
-                const artifact = request.params.artifact;
-                const id = `${buildId}-${artifact}`;
+                const eventId = request.params.id;
+                const cache = request.params.cache;
+                const id = `${eventId}-${cache}`;
                 const contents = {
                     c: request.payload,
                     h: {}
@@ -94,7 +94,7 @@ exports.plugin = {
                 const size = Buffer.byteLength(request.payload);
                 let value = contents;
 
-                if (username !== buildId) {
+                if (username !== eventId) {
                     return boom.forbidden(`Credential only valid for ${username}`);
                 }
 
@@ -110,7 +110,7 @@ exports.plugin = {
                     value = contents.c;
                 }
 
-                request.log(buildId, `Saving ${artifact} of size ${size} bytes with `
+                request.log(eventId, `Saving ${cache} of size ${size} bytes with `
                     + `headers ${JSON.stringify(contents.h)}`);
 
                 try {
@@ -124,16 +124,16 @@ exports.plugin = {
                 return h.response().code(202);
             },
             options: {
-                description: 'Write build artifacts',
-                notes: 'Write an artifact from a specific build',
-                tags: ['api', 'builds'],
+                description: 'Write event cache',
+                notes: 'Write a cache object from a specific event',
+                tags: ['api', 'events'],
                 payload: {
                     maxBytes: parseInt(options.maxByteSize, 10) || DEFAULT_BYTES,
                     parse: false
                 },
                 auth: {
                     strategies: ['token'],
-                    scope: ['build']
+                    scope: ['event']
                 },
                 plugins: {
                     'hapi-swagger': {
@@ -142,8 +142,8 @@ exports.plugin = {
                 },
                 validate: {
                     params: {
-                        id: SCHEMA_BUILD_ID,
-                        artifact: SCHEMA_ARTIFACT_ID
+                        id: SCHEMA_EVENT_ID,
+                        cache: SCHEMA_CACHE_ID
                     }
                 }
             }

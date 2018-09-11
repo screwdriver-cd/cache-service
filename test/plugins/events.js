@@ -8,8 +8,8 @@ const catmemory = require('catbox-memory');
 
 sinon.assert.expose(assert, { prefix: '' });
 
-describe('builds plugin test', () => {
-    const mockBuildID = 1899999;
+describe('events plugin test', () => {
+    const mockEventID = 1899999;
     let plugin;
     let server;
 
@@ -22,7 +22,7 @@ describe('builds plugin test', () => {
 
     beforeEach(() => {
         // eslint-disable-next-line global-require
-        plugin = require('../../plugins/builds');
+        plugin = require('../../plugins/events');
 
         server = Hapi.server({
             cache: {
@@ -55,20 +55,20 @@ describe('builds plugin test', () => {
     });
 
     it('registers the plugin', () => {
-        assert.isOk(server.registrations.builds);
+        assert.isOk(server.registrations.events);
     });
 
-    describe('GET /builds/:id/:artifact', () => {
+    describe('GET /events/:id/:cache', () => {
         it('returns 404 if not found', () => (
             server.inject({
                 headers: {
                     'x-foo': 'bar'
                 },
                 credentials: {
-                    username: mockBuildID,
+                    username: mockEventID,
                     scope: ['user']
                 },
-                url: `/builds/${mockBuildID}/foo`
+                url: `/events/${mockEventID}/foo`
             }).then((response) => {
                 assert.equal(response.statusCode, 404);
             })
@@ -106,10 +106,10 @@ describe('builds plugin test', () => {
                         'x-foo': 'bar'
                     },
                     credentials: {
-                        username: mockBuildID,
+                        username: mockEventID,
                         scope: ['user']
                     },
-                    url: `/builds/${mockBuildID}/foo`
+                    url: `/events/${mockEventID}/foo`
                 }).then((response) => {
                     assert.equal(response.statusCode, 500);
                 })
@@ -117,7 +117,7 @@ describe('builds plugin test', () => {
         });
     });
 
-    describe('PUT /builds/:id/:artifact', () => {
+    describe('PUT /events/:id/:cache', () => {
         let options;
 
         beforeEach(() => {
@@ -130,14 +130,14 @@ describe('builds plugin test', () => {
                     ignore: 'true'
                 },
                 credentials: {
-                    username: mockBuildID,
-                    scope: ['build']
+                    username: mockEventID,
+                    scope: ['event']
                 }
             };
         });
 
         it('returns 403 if wrong creds', () => {
-            options.url = '/builds/122222/foo';
+            options.url = '/events/122222/foo';
 
             return server.inject(options).then((response) => {
                 assert.equal(response.statusCode, 403);
@@ -145,7 +145,7 @@ describe('builds plugin test', () => {
         });
 
         it('returns 5xx if cache is bad', () => {
-            options.url = `/builds/${mockBuildID}/foo`;
+            options.url = `/events/${mockEventID}/foo`;
             // @note this pushes the payload size over the 512 byte limit
             options.payload += 'REEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE';
             options.payload += 'REEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE';
@@ -161,8 +161,8 @@ describe('builds plugin test', () => {
             });
         });
 
-        it('saves an artifact', async () => {
-            options.url = `/builds/${mockBuildID}/foo`;
+        it('saves a cache', async () => {
+            options.url = `/events/${mockEventID}/foo`;
 
             options.headers['content-type'] = 'application/x-ndjson';
             const putResponse = await server.inject(options);
@@ -170,9 +170,9 @@ describe('builds plugin test', () => {
             assert.equal(putResponse.statusCode, 202);
 
             return server.inject({
-                url: `/builds/${mockBuildID}/foo`,
+                url: `/events/${mockEventID}/foo`,
                 credentials: {
-                    username: mockBuildID,
+                    username: mockEventID,
                     scope: ['user']
                 }
             }).then((getResponse) => {
@@ -184,17 +184,17 @@ describe('builds plugin test', () => {
             });
         });
 
-        it('saves an artifact without headers for text/plain type', async () => {
-            options.url = `/builds/${mockBuildID}/foo`;
+        it('saves a cache without headers for text/plain type', async () => {
+            options.url = `/events/${mockEventID}/foo`;
 
             const putResponse = await server.inject(options);
 
             assert.equal(putResponse.statusCode, 202);
 
             return server.inject({
-                url: `/builds/${mockBuildID}/foo`,
+                url: `/events/${mockEventID}/foo`,
                 credentials: {
-                    username: mockBuildID,
+                    username: mockEventID,
                     scope: ['user']
                 }
             }).then((getResponse) => {
@@ -206,8 +206,8 @@ describe('builds plugin test', () => {
             });
         });
 
-        it('saves an artifact and fetches it with pipeline scoped jwt', async () => {
-            options.url = `/builds/${mockBuildID}/foo`;
+        it('saves a cache and fetches it with event scoped jwt', async () => {
+            options.url = `/events/${mockEventID}/foo`;
 
             options.headers['content-type'] = 'application/x-ndjson';
             const putResponse = await server.inject(options);
@@ -215,10 +215,10 @@ describe('builds plugin test', () => {
             assert.equal(putResponse.statusCode, 202);
 
             return server.inject({
-                url: `/builds/${mockBuildID}/foo`,
+                url: `/events/${mockEventID}/foo`,
                 credentials: {
-                    username: mockBuildID,
-                    scope: ['pipeline']
+                    username: mockEventID,
+                    scope: ['event']
                 }
             }).then((getResponse) => {
                 assert.equal(getResponse.statusCode, 200);
