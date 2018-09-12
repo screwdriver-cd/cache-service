@@ -5,7 +5,6 @@ const boom = require('boom');
 
 const SCHEMA_EVENT_ID = joi.number().integer().positive().label('Event ID');
 const SCHEMA_CACHE_ID = joi.string().label('Cache ID');
-const DEFAULT_TTL = 24 * 60 * 60 * 1000; // 1 day
 const DEFAULT_BYTES = 1024 * 1024 * 1024; // 1GB
 
 exports.plugin = {
@@ -16,26 +15,28 @@ exports.plugin = {
      * @method  register
      * @param  {Hapi}     server                Hapi Server
      * @param  {Object}   options               Configuration
-     * @param  {Integer}  options.expiresInSec  How long to keep it around
      * @param  {Integer}  options.maxByteSize   Maximum Bytes to accept
      */
     register(server, options) {
         const cache = server.cache({
-            segment: 'events',
-            expiresIn: parseInt(options.expiresInSec, 10) || DEFAULT_TTL
+            segment: 'events'
         });
 
         server.expose('stats', cache.stats);
-
         server.route([{
             method: 'GET',
-            path: '/events/{id}/{cache*}',
+            path: '/events/{id}/{cacheId}',
             handler: async (request, h) => {
-                const eventId = request.params.id;
-                const cache = request.params.cache;
-                const id = `${eventId}-${cache}`;
+                const { eventId } = request.auth.credentials;
+                const eventIdParam = request.params.id;
+                const cacheIdParam = request.params.cacheId;
+
+                if (eventIdParam !== eventId) {
+                    return boom.forbidden(`Credential only valid for ${eventId}`);
+                }
 
                 let value;
+                const id = `${eventIdParam}-${cacheIdParam}`;
 
                 try {
                     value = await cache.get(id);
@@ -61,11 +62,11 @@ exports.plugin = {
             },
             options: {
                 description: 'Read event cache',
-                notes: 'Get a cached object from a specific event',
+                notes: 'Get a specific cached object from an event',
                 tags: ['api', 'events'],
                 auth: {
                     strategies: ['token'],
-                    scope: ['user', 'event']
+                    scope: ['build']
                 },
                 plugins: {
                     'hapi-swagger': {
@@ -75,7 +76,7 @@ exports.plugin = {
                 validate: {
                     params: {
                         id: SCHEMA_EVENT_ID,
-                        cache: SCHEMA_CACHE_ID
+                        cacheId: SCHEMA_CACHE_ID
                     }
                 }
             }
