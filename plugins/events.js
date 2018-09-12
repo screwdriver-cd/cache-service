@@ -135,7 +135,7 @@ exports.plugin = {
                 },
                 auth: {
                     strategies: ['token'],
-                    scope: ['event']
+                    scope: ['build']
                 },
                 plugins: {
                     'hapi-swagger': {

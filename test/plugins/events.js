@@ -131,7 +131,7 @@ describe('events plugin test', () => {
                 },
                 credentials: {
                     username: mockEventID,
-                    scope: ['event']
+                    scope: ['build']
                 }
             };
         });
@@ -206,7 +206,7 @@ describe('events plugin test', () => {
             });
         });
 
-        it('saves a cache and fetches it with event scoped jwt', async () => {
+        it('saves a cache and fetches it with build scoped jwt', async () => {
             options.url = `/events/${mockEventID}/foo`;
 
             options.headers['content-type'] = 'application/x-ndjson';
@@ -218,7 +218,7 @@ describe('events plugin test', () => {
                 url: `/events/${mockEventID}/foo`,
                 credentials: {
                     username: mockEventID,
-                    scope: ['event']
+                    scope: ['build']
                 }
             }).then((getResponse) => {
                 assert.equal(getResponse.statusCode, 200);
