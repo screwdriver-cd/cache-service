@@ -58,15 +58,15 @@ describe('events plugin test', () => {
         assert.isOk(server.registrations.events);
     });
 
-    describe('GET /events/:id/:cache', () => {
+    describe.only('GET /events/:id/:cacheName', () => {
         it('returns 404 if not found', () => (
             server.inject({
                 headers: {
                     'x-foo': 'bar'
                 },
                 credentials: {
-                    username: mockEventID,
-                    scope: ['user']
+                    eventId: mockEventID,
+                    scope: ['build']
                 },
                 url: `/events/${mockEventID}/foo`
             }).then((response) => {
@@ -106,8 +106,8 @@ describe('events plugin test', () => {
                         'x-foo': 'bar'
                     },
                     credentials: {
-                        username: mockEventID,
-                        scope: ['user']
+                        eventId: mockEventID,
+                        scope: ['build']
                     },
                     url: `/events/${mockEventID}/foo`
                 }).then((response) => {
@@ -130,7 +130,7 @@ describe('events plugin test', () => {
                     ignore: 'true'
                 },
                 credentials: {
-                    username: mockEventID,
+                    eventId: mockEventID,
                     scope: ['build']
                 }
             };
@@ -172,8 +172,8 @@ describe('events plugin test', () => {
             return server.inject({
                 url: `/events/${mockEventID}/foo`,
                 credentials: {
-                    username: mockEventID,
-                    scope: ['user']
+                    eventId: mockEventID,
+                    scope: ['build']
                 }
             }).then((getResponse) => {
                 assert.equal(getResponse.statusCode, 200);
@@ -194,8 +194,8 @@ describe('events plugin test', () => {
             return server.inject({
                 url: `/events/${mockEventID}/foo`,
                 credentials: {
-                    username: mockEventID,
-                    scope: ['user']
+                    eventId: mockEventID,
+                    scope: ['build']
                 }
             }).then((getResponse) => {
                 assert.equal(getResponse.statusCode, 200);
@@ -217,7 +217,7 @@ describe('events plugin test', () => {
             return server.inject({
                 url: `/events/${mockEventID}/foo`,
                 credentials: {
-                    username: mockEventID,
+                    eventId: mockEventID,
                     scope: ['build']
                 }
             }).then((getResponse) => {
