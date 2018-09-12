@@ -4,7 +4,7 @@ const joi = require('joi');
 const boom = require('boom');
 
 const SCHEMA_EVENT_ID = joi.number().integer().positive().label('Event ID');
-const SCHEMA_CACHE_ID = joi.string().label('Cache ID');
+const SCHEMA_CACHE_NAME = joi.string().label('Cache Name');
 const DEFAULT_BYTES = 1024 * 1024 * 1024; // 1GB
 
 exports.plugin = {
@@ -18,28 +18,29 @@ exports.plugin = {
      * @param  {Integer}  options.maxByteSize   Maximum Bytes to accept
      */
     register(server, options) {
-        const cache = server.cache({
-            segment: 'events'
-        });
+        const cache = server.cache({});
 
         server.expose('stats', cache.stats);
         server.route([{
             method: 'GET',
-            path: '/events/{id}/{cacheId}',
+            path: '/events/{id}/{cacheName}',
             handler: async (request, h) => {
                 const { eventId } = request.auth.credentials;
                 const eventIdParam = request.params.id;
-                const cacheIdParam = request.params.cacheId;
+                const cacheName = request.params.cacheName;
+                const cacheKey = {
+                    segment: `events/${eventIdParam}`,
+                    id: cacheName
+                };
 
                 if (eventIdParam !== eventId) {
                     return boom.forbidden(`Credential only valid for ${eventId}`);
                 }
 
                 let value;
-                const id = `${eventIdParam}-${cacheIdParam}`;
 
                 try {
-                    value = await cache.get(id);
+                    value = await cache.get(cacheKey);
                 } catch (err) {
                     throw err;
                 }
@@ -76,7 +77,7 @@ exports.plugin = {
                 validate: {
                     params: {
                         id: SCHEMA_EVENT_ID,
-                        cacheId: SCHEMA_CACHE_ID
+                        cacheName: SCHEMA_CACHE_NAME
                     }
                 }
             }
